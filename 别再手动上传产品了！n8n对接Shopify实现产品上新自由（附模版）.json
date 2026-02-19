@@ -1,0 +1,388 @@
+{
+  "name": "别再手动上传产品了！n8n对接Shopify实现产品上新自由（附模版）",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "# 🛠️ 使用指南  \n**作者:** [TBPI Studio](https://www.youtube.com/@TBPI_Studio)\n\n### ✅ 第 1 步：导入 n8n 工作流  \n在 n8n 中导入提供的 JSON 文件：  \n**n8n → Import from File → 选择模板 JSON**\n\n### ✅ 第 2 步：在第二个【Parameter】节点配置参数： \n- 处理费\n- 公斤费\n- 产品重量\n- 汇率\n- 利润率\n\n### ✅ 第 3 步：【AI Writing】节点配置OpenAI API\n\n### ✅ 第 4 步：在【HTTP Request】节点里，将URL里的your-store改成你的店铺名\nhttps://your-store.myshopify.com/admin/api/2025-07/products.json\n\n\n### 📮 有问题？欢迎加入免费社区  \n如果你在使用过程中遇到任何问题，欢迎到 **免费 Skool 社区** 提问交流：  \n👉 https://www.skool.com/tbpi-studio-9638\n\n我会在社区里统一答疑、更新模板、分享更多自动化技巧。",
+        "height": 672,
+        "width": 544
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1792,
+        2640
+      ],
+      "id": "cf823577-09e3-4ae4-bd36-ff6dfe526f7b",
+      "name": "Sticky Note11"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "008b592e-aa68-4b32-b7f5-19613deded77",
+              "name": "SalesPrice",
+              "value": "={{ Math.floor(($('Parameter').item.json['进货价格(RMB)'] +$('Parameter').item.json.handlingFee+$('Parameter').item.json.itemWeightGrams*$('Parameter').item.json.shippingCostPerKg/1000)*(1+$('Parameter').item.json.profitMargin)/$('Parameter').item.json.exchangeRate)+0.99}}",
+              "type": "number"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "include": "selected",
+        "includeFields": "choices[0].message.content.SKU, choices[0].message.content.Title, choices[0].message.content.Description",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -240,
+        2704
+      ],
+      "id": "a830b81a-ba0d-4019-835d-c53c0ca6f9f4",
+      "name": "Price calculator"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "images",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        -224,
+        3088
+      ],
+      "id": "1c68d7a2-a71c-4d80-b88a-1a62aefa6eab",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "$binary",
+        "options": {
+          "includeBinary": true
+        }
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        -576,
+        3088
+      ],
+      "id": "119063c1-eb87-41f6-918c-dfc5b153dece",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "operation": "binaryToPropery",
+        "binaryPropertyName": "={{ Object.keys($binary)[0] }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -384,
+        3088
+      ],
+      "id": "45818740-6ce1-4df9-be5d-5424e07aabed",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        80,
+        2880
+      ],
+      "id": "bb396ca4-48bf-4778-a0c1-9d79d86a8c83",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://your-store.myshopify.com/admin/api/2025-07/products.json",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "shopifyAccessTokenApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\n  {\n    \"product\": {\n      \"title\": $json.Title,\n      \"body_html\": $json.Description,\n      \"status\": \"active\",\n      \"variants\": [\n        {\n          \"price\": String($json.SalesPrice),\n          \"sku\": $json.SKU\n        }\n      ],\n      \"images\": $json.images.map((item, index) => ({\n        \"attachment\": item.data,\n        \"filename\": `image${index + 1}.png`\n      }))\n    }\n  }\n}}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        256,
+        2880
+      ],
+      "id": "75e22a4f-611d-4f37-afec-16cc3c0d27e5",
+      "name": "HTTP Request",
+      "credentials": {
+        "shopifyAccessTokenApi": {
+          "id": "CXjmvt6uCdVSK7BR",
+          "name": "Use your own Shopify Access Token"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=你是一位专业的电商文案撰写人,为一家在线E-commerce商店工作。请为以下产品创作一个吸引人的标题和描述。你会收到产品的中文标题、中文描述，以及一张或几张产品图片。请基于这些中文描述和产品图片（如果有的话）进行创作。\n\n中文标题：{{ $json['中文标题'] }}\n中文描述：{{ $json['中文描述'] }}\n\n要求如下:\n1. 使用指定格式:\n**Title:**  \n[产品标题]\n\n**Description:**  \n[产品描述]\n\n**SKU:**  \n{{ $json.SKU }}\n\n2. 保持友好的语气,同时确保内容专业、信息丰富且清晰。\n\n3. 突出产品的独特性和实用价值。\n\n4. 描述长度控制在50-100字之间。\n\n请根据以上要求，基于提供的中文描述和图片（如果有）,为产品创作英文标题和描述。\n"
+            }
+          ]
+        },
+        "simplify": "",
+        "jsonOutput": true,
+        "options": {}
+      },
+      "id": "2361b3d4-f65a-4edb-8e79-6882f83de0b4",
+      "name": "AI Writing",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -576,
+        2704
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "TlbIeUIpILYAa9uH",
+          "name": "Use your own OpenAI API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "formTitle": "产品信息",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "产品图片",
+              "fieldType": "file"
+            },
+            {
+              "fieldLabel": "中文标题",
+              "placeholder": "请填写产品的中文标题",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "中文描述",
+              "fieldType": "textarea",
+              "placeholder": "请填写产品的中文描述"
+            },
+            {
+              "fieldLabel": "进货价格(RMB)",
+              "fieldType": "number",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "SKU",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {
+          "appendAttribution": false,
+          "customCss": ":root {\n\t--font-family: 'Open Sans', sans-serif;\n\t--font-weight-normal: 400;\n\t--font-weight-bold: 600;\n\t--font-size-body: 12px;\n\t--font-size-label: 14px;\n\t--font-size-test-notice: 12px;\n\t--font-size-input: 14px;\n\t--font-size-header: 20px;\n\t--font-size-paragraph: 14px;\n\t--font-size-link: 12px;\n\t--font-size-error: 12px;\n\t--font-size-html-h1: 28px;\n\t--font-size-html-h2: 20px;\n\t--font-size-html-h3: 16px;\n\t--font-size-html-h4: 14px;\n\t--font-size-html-h5: 12px;\n\t--font-size-html-h6: 10px;\n\t--font-size-subheader: 14px;\n\n\t/* Colors */\n\t--color-background: #fbfcfe;\n\t--color-test-notice-text: #e6a23d;\n\t--color-test-notice-bg: #fefaf6;\n\t--color-test-notice-border: #f6dcb7;\n\t--color-card-bg: #ffffff;\n\t--color-card-border: #dbdfe7;\n\t--color-card-shadow: rgba(99, 77, 255, 0.06);\n\t--color-link: #7e8186;\n\t--color-header: #525356;\n\t--color-label: #555555;\n\t--color-input-border: #dbdfe7;\n\t--color-input-text: #71747A;\n\t--color-focus-border: rgb(90, 76, 194);\n\t--color-submit-btn-bg: #ff6d5a;\n\t--color-submit-btn-text: #ffffff;\n\t--color-error: #ea1f30;\n\t--color-required: #ff6d5a;\n\t--color-clear-button-bg: #7e8186;\n\t--color-html-text: #555;\n\t--color-html-link: #ff6d5a;\n\t--color-header-subtext: #7e8186;\n\n\t/* Border Radii */\n\t--border-radius-card: 8px;\n\t--border-radius-input: 6px;\n\t--border-radius-clear-btn: 50%;\n\t--card-border-radius: 8px;\n\n\t/* Spacing */\n\t--padding-container-top: 24px;\n\t--padding-card: 24px;\n\t--padding-test-notice-vertical: 12px;\n\t--padding-test-notice-horizontal: 24px;\n\t--margin-bottom-card: 16px;\n\t--padding-form-input: 12px;\n\t--card-padding: 24px;\n\t--card-margin-bottom: 16px;\n\n\t/* Dimensions */\n\t--container-width: 448px;\n\t--submit-btn-height: 48px;\n\t--checkbox-size: 18px;\n\n\t/* Others */\n\t--box-shadow-card: 0px 4px 16px 0px var(--color-card-shadow);\n\t--opacity-placeholder: 0.5;\n}"
+        }
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.3,
+      "position": [
+        -1120,
+        2864
+      ],
+      "id": "5c057a0c-a027-4e4f-8ab4-f0abeb2e6477",
+      "name": "On form submission",
+      "webhookId": "6fc4f4a8-0584-470d-94d3-4206cfeb611c"
+    },
+    {
+      "parameters": {
+        "content": "## 在这里配置参数，包括：\n- 处理费\n- 公斤费\n- 产品重量\n- 汇率\n- 利润率\n",
+        "height": 416,
+        "width": 208
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -928,
+        2640
+      ],
+      "id": "aefe6ba9-2202-4e45-abd8-68dfad30e0d6",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2a5a04a6-aff2-4096-afc8-73fde2807183",
+              "name": "handlingFee",
+              "value": 28,
+              "type": "number"
+            },
+            {
+              "id": "66bf3b53-8796-4c41-a714-22270d5aadd7",
+              "name": "shippingCostPerKg",
+              "value": 100,
+              "type": "number"
+            },
+            {
+              "id": "1b7a2541-805e-43f6-94dd-55cef9daaabd",
+              "name": "itemWeightGrams",
+              "value": 400,
+              "type": "number"
+            },
+            {
+              "id": "27d4c6d2-37df-420e-bb04-a9c615630b5e",
+              "name": "exchangeRate",
+              "value": 7.2,
+              "type": "number"
+            },
+            {
+              "id": "de16a115-499b-49b2-906b-0174a06ac653",
+              "name": "profitMargin",
+              "value": 0.5,
+              "type": "number"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -880,
+        2864
+      ],
+      "id": "44c50586-fd1a-49b8-8729-99075eef673b",
+      "name": "Parameter"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Price calculator": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Writing": {
+      "main": [
+        [
+          {
+            "node": "Price calculator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Parameter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parameter": {
+      "main": [
+        [
+          {
+            "node": "AI Writing",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "57920a1f-ee87-4aec-a14a-21ff961d4ba8",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "52d1a720bab26d3ce0dbeef93d94b64d39239dc7ff9d1c95884dd1b00094b19d"
+  },
+  "id": "P1GwAaSFZC4hPpjA",
+  "tags": []
+}
