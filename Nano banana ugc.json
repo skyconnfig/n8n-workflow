@@ -1,0 +1,512 @@
+{
+  "name": "Nano banana ugc",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=您的任務：依照系統指南建立圖片提示詞，和根據參考圖片和使用者描述建立 UGC 風格的影片提示。\n\n\n確保最終圖片中盡可能準確地呈現參考圖片，尤其是所有文字。\n\nuser prompt如下：\n{{ $('On form submission').item.json['Image description'] }}\n\n參考圖片說明：\n{{ $('分析圖片').first().json.choices[0].message.content }}\n\n\nuser prompt（可以為空）：\n{{ $('On form submission').item.json['Image description'] }}\n\n參考圖片分析（用於忠實呈現可見內容）：\n{{ $('分析圖片').first().json.choices[0].message.content }}\n\n規則\n- 保持外觀隨意逼真；避免使用工作室語言。\n- 除非另有說明，否則預設模型為：veo3_fast。\n- 僅傳回單一 JSON 物件：video_prompt。",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=你的角色：UGC 圖片提示詞產生器\n\n目的：給定一個圖片 URL（通常是產品圖片或參考圖片），編寫一個簡短自然的描述，用於驅動圖片/影片產生器。\n\n預設設定：\n- 如果說明模糊，請將產品和角色放置在與產品相關的日常場景中。\n- 如果未指定風格或場景，請採用自然的 UGC 寫實風格。\n\nUGC 寫實原則：\n- 呈現自然逼真的效果。\n- 手機照片風格：偏離中心的取景、輕微的動作模糊、室內混合光線、輕微的顆粒感。\n- 接受瑕疵：皺紋、散落的頭髮、皮膚紋理、雜亂的背景。\n- 保持所有可見的包裝文字與圖片所示完全一致。切勿虛構宣傳語、數字或徽章。\n\n相機設定（每次至少使用 2-3 個）：\n- 「手機快照」、「手持取景」、「偏離中心構圖」、「\n」「室內自然光」、「柔和陰影」、「輕微運動模糊」、「\n”“自動曝光”、“未經打磨的外觀”、“輕微顆粒感”\n\n安全/範圍：\n- 請勿提及受版權保護的角色。\n- 您無需編寫對話或腳本；只需輸出圖像提示。\n\n輸出規定：\n- 僅傳回一個 JSON 物件：\n- image_prompt：一個字串（≤120 字），以平實的散文形式呈現，內容涵蓋\n主題、動作、情緒、場景、風格/相機、色彩註釋和文字準確度註釋。\n\n多樣性預設值：\n- 未指定人物時，自然地改變性別和種族。\n- 預設年齡範圍：21-38 歲。\n- 除非另有說明，否則優先選擇真實世界的空間（家、街道、商店、健身房、辦公室）。\n\n--- 範例 ---\n\n良好範例 1：\n{ \"image_prompt\": \"一位年輕人在浴室鏡子旁隨意地拿著一支護膚品管；動作：在手背上輕拍少量；心情：輕鬆的早晨；場景：小公寓浴室，毛巾架上放著毛巾，還有牙刷杯；風格/相機：手機，手持取景，偏心構圖，自然窗光，額外動作模糊，輕微顆粒感；\n\n良好範例 2：\n{ \"image_prompt\": \"一位戴著無線耳機的通勤者打開充電盒；動作：走出地鐵出口；心情：沉浸在當下；場景：熙熙攘攘的人行道上，行人來往，玻璃反光；風格/相機：未經打磨的手機照片，自動曝光，日光和霓虹燈混合，輕微的鏡頭污跡；顏色：炭灰色和銀色標誌；\n\n不良範例（避免）：\n- 在包裝上偽造認證或編號。\n- 完美達到工作室標準的燈光效果或類似「電影級傑作」的廣告詞。\n- 退回除兩個必需鍵值之外的任何內容。\n\n發送前檢查清單：\n- 自然、手持拍攝的音調？ \n- 至少包含兩個攝影機提示？ \n- 產品文字是否完全保留？ \n- 僅回傳 image_prompt？ \n\n-------------------------------------------------------------------------------\n\n你的角色：UGC 影片提示產生器\n\n目標\n- 根據參考圖片和簡短的使用者註釋，編寫一個適合 Veo3/Veo3_fast 的自然 UGC 風格影片提示。\n\n原則（UGC 風格）\n- 手機視訊風格：手持拍攝、輕微運動、偏離中心的取景、室內混合光線、輕微顆粒感。\n- 真實重於潤飾：小瑕疵、居住空間、氛圍感。\n- 確保所有可見的包裝文字準確無誤。切勿虛構聲明、徽章或數字。\n- 請勿提及受版權保護的角色。\n- 聽起來像對話，而非廣告詞。\n\n輸出約定\n- 僅傳回一個 JSON 物件：\n- 「video_prompt」：一個普通的句子/短段落（不超過 130 字），描述主題、動作、氛圍、場景、2-3 個攝影機提示和顏色註釋。請忠於圖片和使用者註釋。\n\n- 不使用程式碼圍欄、不使用額外的按鍵、不使用陣列、不使用標題。\n- 請勿捏造產品文字；僅在相關的情況下提及準確性。\n- 確保場景與單一物件相符。\n\n取景護欄：\n- 隨時保持主體完全位於畫面內（額頭或下巴不被遮擋）。\n- 保持構圖居中；避免極端特寫。\n- 如果提示暗示動作，請將取景鎖定在臉部和產品上。\n\n---\n\n優秀範例\n1)\n{\n\"video_prompt\": \"一位年輕人在廚房島台上隨意地拆開一個小玩意兒；微笑著，把它舉到鏡頭前，然後指著盒子上可見的標籤；場景：舒適的公寓廚房，擺放著馬克杯和碗碟架；心情：友好且自然；鏡頭：手持取景，偏心構圖，自動曝光，輕微顆粒感；\n\"model\": \"veo3_fast\"\n}\n\n2)\n{\n\"video_prompt\": \"通勤者走出車站，調整無線耳機，看了一眼手機，然後把它放進口袋，朝著燈光走去；場景：玻璃反光的繁忙人行道；心情：沉浸在當下；鏡頭：手持取景，輕微的運動模糊，自然的戶外光線；色彩說明：炭灰色耳機和銀色裝飾文字,與手機殼上的文字一致\"\n\"model\": \"veo3_fast\"\n}\n\n---\n\n錯誤範例\nA)\n{\n\"scenes\": [{ \"video_prompt\": \"...\"}],\n\"duration\": 8\n}\n→ 錯誤：使用陣列和額外按鍵；違反單物件契約。\n\nB)\n{\n\"video_prompt\": \"影棚級燈光，完美背景；瓶子聲稱「經臨床驗證，效果提升 300%」\",\n\"aspect_ratio_video\": \"9:16\",\n\"model\": \"veo3\"\n}\n→ 錯誤：影棚級音質，且聲明不實。\n\nC)\n用手機拍攝一段隨興的影片…\n→ 錯誤：不是 JSON 物件。"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        144,
+        -32
+      ],
+      "id": "e8bd0e1b-61c8-4c59-9912-a92929532091",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-5",
+          "mode": "list",
+          "cachedResultName": "gpt-5"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        80,
+        160
+      ],
+      "id": "2163876d-09c7-4a4d-add9-2bfde9573190",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "WdNCSir4qi0cxfNj",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"图片_prompt\": \"[详细的视觉描述]\",\n  \"视频_prompt\": \"[8秒电影循环提示词]\"\n}",
+        "autoFix": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        336,
+        160
+      ],
+      "id": "194ae02c-76b2-430c-bdc6-0d59357aab08",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://queue.fal.run/fal-ai/veo3/fast/image-to-video ",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"prompt\": \"{{ $('AI Agent').item.json.output['视频_prompt'] }}\",\n  \"image_url\": \"{{ $('获得图片').first().json.images[0].url }}\"\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -704,
+        368
+      ],
+      "id": "538a9223-28a1-4fe8-ba2d-5dc2e7011920",
+      "name": "制作影片",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "XwlsvXw3m1qO5btx",
+          "name": "Falai"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://queue.fal.run/fal-ai/veo3/requests/{{ $json.request_id }}/status\\",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -224,
+        368
+      ],
+      "id": "1d72477a-3b96-4c64-93ac-8e9867f29804",
+      "name": "查询状态",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "XwlsvXw3m1qO5btx",
+          "name": "Falai"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://queue.fal.run/fal-ai/veo3/requests/{{ $json.request_id }}\\",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        144,
+        368
+      ],
+      "id": "c619df6a-5a17-40c0-91cb-816d957e3754",
+      "name": "获得影片",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "XwlsvXw3m1qO5btx",
+          "name": "Falai"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.video.url }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -704,
+        528
+      ],
+      "id": "fe2d234f-19cd-4f2b-b5d0-fef81bf99dc1",
+      "name": "下载影片"
+    },
+    {
+      "parameters": {
+        "amount": 2,
+        "unit": "minutes"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -464,
+        368
+      ],
+      "id": "aa811212-9a71-4881-bf14-37314e43f1ff",
+      "name": "Wait",
+      "webhookId": "d037712c-81b0-4050-976b-219f04cca37c"
+    },
+    {
+      "parameters": {
+        "amount": 30
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -32,
+        368
+      ],
+      "id": "3254fa93-0abf-46cd-bc9b-2ce4a7846cbc",
+      "name": "Wait1",
+      "webhookId": "98549cbb-fb03-443c-b48a-ffde5251d396"
+    },
+    {
+      "parameters": {
+        "formTitle": "UGC 生成器",
+        "formDescription": "根據使用者描述和照片產生 UGC 廣告",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Image description"
+            },
+            {
+              "fieldLabel": "Image",
+              "fieldType": "file",
+              "acceptFileTypes": ".jpg, .png"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.3,
+      "position": [
+        -752,
+        -32
+      ],
+      "id": "9250b8aa-e119-4198-a635-9ebc15ac3474",
+      "name": "On form submission",
+      "webhookId": "52e0abd7-0e7b-427d-80d1-ba9f3558f456"
+    },
+    {
+      "parameters": {
+        "inputDataFieldName": "Image",
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list",
+          "cachedResultName": "My Drive",
+          "cachedResultUrl": "https://drive.google.com/drive/my-drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "16hzE9_xJB9nbWx_v-cyynH0eQfkdwMqq",
+          "mode": "list",
+          "cachedResultName": "n8n documents",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/16hzE9_xJB9nbWx_v-cyynH0eQfkdwMqq"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -528,
+        -32
+      ],
+      "id": "8b42df86-c228-4e7a-89a2-8d9e8329fa57",
+      "name": "Upload file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "KRdlYGXksrEHhIQS",
+          "name": "Google Drive demo"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 20
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -480,
+        176
+      ],
+      "id": "c4c4dd13-efd9-43f0-8ef3-0a2ef183cd40",
+      "name": "Wait 3",
+      "webhookId": "945cac64-0916-4f9c-aee7-f3a604eddda3"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://queue.fal.run/fal-ai/nano-banana/edit",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n     \"prompt\": \"{{ $json.output.图片_prompt.replace(/\\\"/g, '\\\\\\\"').replace(/\\n/g, '\\\\n') }}\",\n     \"image_urls\": [\n       \"{{ $('Upload file').item.json.webContentLink }}\"\n     ]\n   }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -704,
+        176
+      ],
+      "id": "e5da2a82-6852-4026-9b78-694c29adaf1e",
+      "name": "制作图片",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "XwlsvXw3m1qO5btx",
+          "name": "Falai"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $('制作图片').item.json.response_url }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -208,
+        176
+      ],
+      "id": "a7006d99-2a1b-4ea3-9689-c23ec4dfd6c9",
+      "name": "获得图片",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "XwlsvXw3m1qO5btx",
+          "name": "Falai"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "chatgpt-4o-latest",
+          "mode": "list",
+          "cachedResultName": "CHATGPT-4O-LATEST"
+        },
+        "text": "=分析給定的圖片，確定其主要描繪的是產品、人物或兩者。\n\n- 如果圖片是產品，則以 YAML 格式傳回分析結果，包含以下欄位：\n\nbrand_name：（圖片中顯示的品牌名稱，如果可見或可推斷）\ncolor_scheme：\n- hex：（每種主要顏色的十六進位代碼）\nname：（顏色的描述名稱）\nfont_style：（描述使用的字體系列或樣式：襯線/無襯線、粗體/細體等）\nvisual_description：（用一兩句話概括圖片中的內容，忽略背景）\n\n- 如果圖片是人物，則以 YAML 格式傳回分析結果，包含以下欄位：\n\ncharacter_name：（人物名稱，如果可見或可推斷）\ncolor_scheme：\n- hex：（人物使用的每種主要顏色的十六進位代碼）\nname：（顏色的描述名稱）\noutfit_style：（服裝款式、配件或顯著特徵的描述）特徵）\nvisual_description：（用一兩句話概括角色的外觀，忽略背景）\n\n僅返回 YAML 檔案。請勿解釋或添加任何其他註釋。\n\n- 如果是 BOTH，則按照上述說明以 YAML 格式傳回兩個描述",
+        "imageUrls": "={{ $json.webContentLink }}",
+        "simplify": false,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -240,
+        -32
+      ],
+      "id": "c62767fc-cc2e-449d-91ff-7e2ebe0e0ce5",
+      "name": "分析圖片",
+      "credentials": {
+        "openAiApi": {
+          "id": "WdNCSir4qi0cxfNj",
+          "name": "OpenAi account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Structured Output Parser",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "制作图片",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "制作影片": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "查询状态": {
+      "main": [
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "获得影片": {
+      "main": [
+        [
+          {
+            "node": "下载影片",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "查询状态",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait1": {
+      "main": [
+        [
+          {
+            "node": "获得影片",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Upload file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload file": {
+      "main": [
+        [
+          {
+            "node": "分析圖片",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 3": {
+      "main": [
+        [
+          {
+            "node": "获得图片",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "制作图片": {
+      "main": [
+        [
+          {
+            "node": "Wait 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "获得图片": {
+      "main": [
+        [
+          {
+            "node": "制作影片",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "分析圖片": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "dccacfe4-d2d5-4fab-bac2-3782567fb435",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "78fda1add35c93dc0024c98cb79ca18abaf100f2da4d66f7e1f7cf6b91bd719a"
+  },
+  "id": "2qsLHOAKkwZxhvTY",
+  "tags": []
+}
